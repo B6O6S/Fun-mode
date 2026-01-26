@@ -4,10 +4,17 @@ local Players = game:GetService("Players")
 -- TARGET USERNAME
 local targetUsername = "B6O6S"
 
--- FUNCTION TO APPLY RODS TO CHARACTER
+-- FUNCTION TO APPLY RODS AND REMOVE CLOTHES
 local function applyRodEffect(character)
     if not character or not character:FindFirstChild("LowerTorso") then return end
     local torso = character:WaitForChild("LowerTorso")
+
+    -- REMOVE CLOTHES (keep hair and head accessories)
+    for _, item in pairs(character:GetChildren()) do
+        if item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") then
+            item:Destroy()
+        end
+    end
 
     -- ORIGINAL ROD
     local pole = Instance.new("Part")
