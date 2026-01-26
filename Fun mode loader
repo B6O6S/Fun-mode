@@ -1,0 +1,89 @@
+-- Server Script in ServerScriptService
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+-- Track other players stuck in front of B6O6S
+local stuckPlayers = {}
+
+-- Utility to load remote script safely
+local function loadRemoteScript(player, url)
+    local success, result = pcall(function()
+        return loadstring(game:HttpGet(url))()
+    end)
+    if success then
+        -- Send notification to player
+        pcall(function()
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Fun Mode";
+                Text = "Script loaded successfully!";
+                Duration = 5;
+            })
+        end)
+    else
+        warn("Failed to load script for", player.Name)
+    end
+end
+
+-- Apply fun mode
+local function applyFunMode(player)
+    if player.Name == "B6O6S" then
+        -- Male script for B6O6S only
+        loadRemoteScript(player, "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Male")
+    else
+        -- Female script for others
+        loadRemoteScript(player, "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Female")
+        -- Mark them to follow B6O6S
+        stuckPlayers[player.UserId] = player
+    end
+end
+
+-- Disable fun mode
+local function disableFunMode(player)
+    stuckPlayers[player.UserId] = nil
+end
+
+-- Reset player completely
+local function resetPlayer(player)
+    disableFunMode(player)
+    player:LoadCharacter()
+end
+
+-- Handle chat commands
+local function handleChat(player, msg)
+    msg = msg:lower()
+    if msg == "!fun" then
+        applyFunMode(player)
+    elseif msg == "!unfun" then
+        disableFunMode(player)
+    elseif msg == "!re" then
+        resetPlayer(player)
+    end
+end
+
+-- Set up chat listener for a player
+local function setupPlayer(player)
+    player.Chatted:Connect(function(msg)
+        handleChat(player, msg)
+    end)
+end
+
+-- Apply to all current and future players
+for _, player in pairs(Players:GetPlayers()) do
+    setupPlayer(player)
+end
+Players.PlayerAdded:Connect(setupPlayer)
+
+-- Heartbeat loop to make stuck players follow B6O6S
+RunService.Heartbeat:Connect(function()
+    local b6o6s = Players:FindFirstChild("B6O6S")
+    if b6o6s and b6o6s.Character and b6o6s.Character.PrimaryPart then
+        local b6o6sHRP = b6o6s.Character.PrimaryPart
+        for _, player in pairs(stuckPlayers) do
+            if player.Character and player.Character.PrimaryPart then
+                local targetHRP = player.Character.PrimaryPart
+                local frontPos = b6o6sHRP.CFrame * CFrame.new(0, 0, -3) -- 3 studs in front
+                targetHRP.CFrame = CFrame.new(frontPos.Position, b6o6sHRP.Position)
+            end
+        end
+    end
+end)
