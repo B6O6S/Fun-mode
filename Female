@@ -1,0 +1,43 @@
+-- SERVICES
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local torso = character:WaitForChild("LowerTorso")
+local RunService = game:GetService("RunService")
+
+-- BALL SETTINGS
+local ballSize = 0.9
+local initialOffset = Vector3.new(-0.45, 0, 0.5)
+local stickDistance = 0.85 -- slightly overlapping balls
+
+-- CREATE BALL1
+local ball1 = Instance.new("Part")
+ball1.Name = "Ball1"
+ball1.Shape = Enum.PartType.Ball
+ball1.Size = Vector3.new(ballSize, ballSize, ballSize)
+ball1.Material = Enum.Material.SmoothPlastic
+ball1.CanCollide = false
+ball1.Anchored = true
+ball1.Massless = true
+ball1.Parent = character
+
+-- CREATE BALL2
+local ball2 = Instance.new("Part")
+ball2.Name = "Ball2"
+ball2.Shape = Enum.PartType.Ball
+ball2.Size = Vector3.new(ballSize, ballSize, ballSize)
+ball2.Material = Enum.Material.SmoothPlastic
+ball2.CanCollide = false
+ball2.Anchored = true
+ball2.Massless = true
+ball2.Parent = character
+
+-- RENDER LOOP TO FOLLOW PLAYER
+RunService.RenderStepped:Connect(function()
+	-- update colors dynamically
+	ball1.Color = torso.Color
+	ball2.Color = torso.Color
+
+	-- position balls relative to torso
+	ball1.CFrame = torso.CFrame * CFrame.new(initialOffset)
+	ball2.CFrame = torso.CFrame * CFrame.new(initialOffset + Vector3.new(stickDistance, 0, 0))
+end)
