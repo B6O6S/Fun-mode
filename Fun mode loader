@@ -1,22 +1,27 @@
--- Server Script in ServerScriptService
+-- Server Script (ServerScriptService)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
 
--- Track other players stuck in front of B6O6S
-local stuckPlayers = {}
+-- URLs
+local MALE_URL = "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Male"
+local FEMALE_URL = "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Female"
 
--- Utility to load remote script safely
-local function loadRemoteScript(player, url)
-    local success, result = pcall(function()
-        return loadstring(game:HttpGet(url))()
+-- Players that should follow B6O6S
+local followers = {}
+
+-- Load remote script + notify
+local function loadScript(player, url)
+    local success = pcall(function()
+        loadstring(game:HttpGet(url))()
     end)
+
     if success then
-        -- Send notification to player
         pcall(function()
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Fun Mode";
-                Text = "Script loaded successfully!";
-                Duration = 5;
+            StarterGui:SetCore("SendNotification", {
+                Title = "Fun Mode",
+                Text = "Script loaded successfully!",
+                Duration = 4
             })
         end)
     else
@@ -24,66 +29,67 @@ local function loadRemoteScript(player, url)
     end
 end
 
--- Apply fun mode
-local function applyFunMode(player)
+-- Apply !fun
+local function applyFun(player)
     if player.Name == "B6O6S" then
-        -- Male script for B6O6S only
-        loadRemoteScript(player, "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Male")
+        -- B6O6S gets BOTH scripts
+        loadScript(player, MALE_URL)
+        loadScript(player, FEMALE_URL)
     else
-        -- Female script for others
-        loadRemoteScript(player, "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Female")
-        -- Mark them to follow B6O6S
-        stuckPlayers[player.UserId] = player
+        -- Others get female + follow
+        loadScript(player, FEMALE_URL)
+        followers[player.UserId] = player
     end
 end
 
--- Disable fun mode
-local function disableFunMode(player)
-    stuckPlayers[player.UserId] = nil
+-- Stop fun
+local function stopFun(player)
+    followers[player.UserId] = nil
 end
 
--- Reset player completely
+-- Full reset
 local function resetPlayer(player)
-    disableFunMode(player)
+    stopFun(player)
     player:LoadCharacter()
 end
 
--- Handle chat commands
-local function handleChat(player, msg)
+-- Chat handler
+local function onChat(player, msg)
     msg = msg:lower()
     if msg == "!fun" then
-        applyFunMode(player)
+        applyFun(player)
     elseif msg == "!unfun" then
-        disableFunMode(player)
+        stopFun(player)
     elseif msg == "!re" then
         resetPlayer(player)
     end
 end
 
--- Set up chat listener for a player
+-- Setup player
 local function setupPlayer(player)
     player.Chatted:Connect(function(msg)
-        handleChat(player, msg)
+        onChat(player, msg)
     end)
 end
 
--- Apply to all current and future players
-for _, player in pairs(Players:GetPlayers()) do
-    setupPlayer(player)
+-- Existing & joining players
+for _, p in ipairs(Players:GetPlayers()) do
+    setupPlayer(p)
 end
 Players.PlayerAdded:Connect(setupPlayer)
 
--- Heartbeat loop to make stuck players follow B6O6S
+-- Follow loop (ONLY for non-B6O6S players)
 RunService.Heartbeat:Connect(function()
     local b6o6s = Players:FindFirstChild("B6O6S")
-    if b6o6s and b6o6s.Character and b6o6s.Character.PrimaryPart then
-        local b6o6sHRP = b6o6s.Character.PrimaryPart
-        for _, player in pairs(stuckPlayers) do
-            if player.Character and player.Character.PrimaryPart then
-                local targetHRP = player.Character.PrimaryPart
-                local frontPos = b6o6sHRP.CFrame * CFrame.new(0, 0, -3) -- 3 studs in front
-                targetHRP.CFrame = CFrame.new(frontPos.Position, b6o6sHRP.Position)
-            end
+    if not (b6o6s and b6o6s.Character and b6o6s.Character.PrimaryPart) then return end
+
+    local bHRP = b6o6s.Character.PrimaryPart
+
+    for _, player in pairs(followers) do
+        if player.Character and player.Character.PrimaryPart then
+            local hrp = player.Character.PrimaryPart
+            local offset = bHRP.CFrame * CFrame.new(0, 0, -3)
+            hrp.CFrame = CFrame.new(offset.Position, bHRP.Position)
         end
     end
 end)
