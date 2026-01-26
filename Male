@@ -1,63 +1,84 @@
 -- SERVICES
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local torso = character:WaitForChild("LowerTorso")
+local Players = game:GetService("Players")
 
--- ORIGINAL ROD
-local pole = Instance.new("Part")
-pole.Name = "TorsoPole"
-pole.Shape = Enum.PartType.Cylinder
-pole.Size = Vector3.new(0.3, 10, 0.3)
-pole.Material = Enum.Material.SmoothPlastic
-pole.Color = torso.Color
-pole.CanCollide = false
-pole.Anchored = false
-pole.Massless = true
-pole.Parent = character
+-- TARGET USERNAME
+local targetUsername = "B6O6S"
 
-local offset = Vector3.new(0, 0, -0.6)
-local rotation = Vector3.new(90, 0, 90)
+-- FUNCTION TO APPLY RODS TO CHARACTER
+local function applyRodEffect(character)
+    if not character or not character:FindFirstChild("LowerTorso") then return end
+    local torso = character:WaitForChild("LowerTorso")
 
-local weld = Instance.new("Weld")
-weld.Part0 = torso
-weld.Part1 = pole
-weld.C0 = CFrame.new(offset) * CFrame.Angles(math.rad(rotation.X), math.rad(rotation.Y), math.rad(rotation.Z))
-weld.Parent = pole
+    -- ORIGINAL ROD
+    local pole = Instance.new("Part")
+    pole.Name = "TorsoPole"
+    pole.Shape = Enum.PartType.Cylinder
+    pole.Size = Vector3.new(0.3, 10, 0.3)
+    pole.Material = Enum.Material.SmoothPlastic
+    pole.Color = torso.Color
+    pole.CanCollide = false
+    pole.Anchored = false
+    pole.Massless = true
+    pole.Parent = character
 
--- FRONT EXTENSION PART (skin-colored)
-local extension = Instance.new("Part")
-extension.Name = "PoleExtension"
-extension.Shape = Enum.PartType.Cylinder
-extension.Size = Vector3.new(0.3, 8, 0.3)
-extension.Material = Enum.Material.SmoothPlastic
-extension.Color = torso.Color
-extension.CanCollide = false
-extension.Anchored = false
-extension.Massless = true
-extension.Parent = character
+    local offset = Vector3.new(0, 0, -0.6)
+    local rotation = Vector3.new(90, 0, 90)
 
-local extWeld = Instance.new("Weld")
-extWeld.Part0 = pole
-extWeld.Part1 = extension
-extWeld.C0 = CFrame.new(-0.3, 0, 0)
-extWeld.C1 = CFrame.new()
-extWeld.Parent = extension
+    local weld = Instance.new("Weld")
+    weld.Part0 = torso
+    weld.Part1 = pole
+    weld.C0 = CFrame.new(offset) * CFrame.Angles(math.rad(rotation.X), math.rad(rotation.Y), math.rad(rotation.Z))
+    weld.Parent = pole
 
--- SECOND ROD (salmon pink)
-local secondRod = Instance.new("Part")
-secondRod.Name = "SecondRod"
-secondRod.Shape = Enum.PartType.Cylinder
-secondRod.Size = Vector3.new(0.31, 8, 0.31) -- slightly bigger
-secondRod.Material = Enum.Material.SmoothPlastic
-secondRod.Color = Color3.fromRGB(250, 128, 114) -- salmon pink
-secondRod.CanCollide = false
-secondRod.Anchored = false
-secondRod.Massless = true
-secondRod.Parent = character
+    -- FRONT EXTENSION PART (skin-colored)
+    local extension = Instance.new("Part")
+    extension.Name = "PoleExtension"
+    extension.Shape = Enum.PartType.Cylinder
+    extension.Size = Vector3.new(0.3, 8, 0.3)
+    extension.Material = Enum.Material.SmoothPlastic
+    extension.Color = torso.Color
+    extension.CanCollide = false
+    extension.Anchored = false
+    extension.Massless = true
+    extension.Parent = character
 
-local secondWeld = Instance.new("Weld")
-secondWeld.Part0 = pole
-secondWeld.Part1 = secondRod
-secondWeld.C0 = CFrame.new(-0.6, 0, 0) -- position relative to original rod
-secondWeld.C1 = CFrame.new()
-secondWeld.Parent = secondRod
+    local extWeld = Instance.new("Weld")
+    extWeld.Part0 = pole
+    extWeld.Part1 = extension
+    extWeld.C0 = CFrame.new(-0.3, 0, 0)
+    extWeld.C1 = CFrame.new()
+    extWeld.Parent = extension
+
+    -- SECOND ROD (salmon pink)
+    local secondRod = Instance.new("Part")
+    secondRod.Name = "SecondRod"
+    secondRod.Shape = Enum.PartType.Cylinder
+    secondRod.Size = Vector3.new(0.31, 8, 0.31) -- slightly bigger
+    secondRod.Material = Enum.Material.SmoothPlastic
+    secondRod.Color = Color3.fromRGB(250, 128, 114) -- salmon pink
+    secondRod.CanCollide = false
+    secondRod.Anchored = false
+    secondRod.Massless = true
+    secondRod.Parent = character
+
+    local secondWeld = Instance.new("Weld")
+    secondWeld.Part0 = pole
+    secondWeld.Part1 = secondRod
+    secondWeld.C0 = CFrame.new(-0.6, 0, 0) -- position relative to original rod
+    secondWeld.C1 = CFrame.new()
+    secondWeld.Parent = secondRod
+end
+
+-- APPLY TO EXISTING PLAYERS
+for _, player in pairs(Players:GetPlayers()) do
+    if player.Name == targetUsername and player.Character then
+        applyRodEffect(player.Character)
+    end
+end
+
+-- APPLY TO FUTURE PLAYERS AND CHARACTERS
+Players.PlayerAdded:Connect(function(player)
+    if player.Name == targetUsername then
+        player.CharacterAdded:Connect(applyRodEffect)
+    end
+end)
