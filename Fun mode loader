@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local TextChatService = game:GetService("TextChatService")
 local StarterGui = game:GetService("StarterGui")
 
 local COMMAND_OWNER = "B6O6S"
@@ -24,49 +25,88 @@ local function loadScript(player, url)
                 Duration = 4
             })
         end)
+    else
+        warn("Failed to load script for", player.Name)
     end
 end
 
--- Apply fun (ONLY B6O6S)
+-- Apply fun
 local function applyFun()
     local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
     local nylas = Players:FindFirstChild(FOLLOW_TARGET)
-
     if not b6o6s then return end
 
-    -- B6O6S gets both
     loadScript(b6o6s, MALE_URL)
     loadScript(b6o6s, FEMALE_URL)
 
-    -- Nylas gets female + follow
     if nylas then
         loadScript(nylas, FEMALE_URL)
         following = true
     end
 end
 
--- Stop follow only
+-- Stop follow
 local function stopFun()
     following = false
 end
 
--- FULL RESET (both players)
+-- Reset BOTH players
 local function resetAll()
     following = false
-
     local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
     local nylas = Players:FindFirstChild(FOLLOW_TARGET)
-
     if b6o6s then b6o6s:LoadCharacter() end
     if nylas then nylas:LoadCharacter() end
 end
 
--- Chat control (ONLY B6O6S)
-local function onChat(player, msg)
-    msg = msg:lower()
+-- Handle command text
+local function handleCommand(player, text)
+    text = text:lower()
     if player.Name ~= COMMAND_OWNER then return end
 
-    if msg == "!fun" then
+    if text == "!fun" then
+        applyFun()
+    elseif text == "!unfun" then
+        stopFun()
+    elseif text == "!re" then
+        resetAll()
+    end
+end
+
+-- 🔥 TEXT CHAT SERVICE (NEW SYSTEM)
+if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+    TextChatService.OnIncomingMessage = function(message)
+        local player = Players:GetPlayerByUserId(message.TextSource.UserId)
+        if player then
+            handleCommand(player, message.Text)
+        end
+        return TextChatService.CreateMessage()
+    end
+else
+    -- 🧯 FALLBACK (OLD CHAT, just in case)
+    Players.PlayerAdded:Connect(function(player)
+        player.Chatted:Connect(function(msg)
+            handleCommand(player, msg)
+        end)
+    end)
+end
+
+-- Follow logic (back facing + close)
+RunService.Heartbeat:Connect(function()
+    if not following then return end
+
+    local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
+    local nylas = Players:FindFirstChild(FOLLOW_TARGET)
+    if not (b6o6s and nylas) then return end
+    if not (b6o6s.Character and nylas.Character) then return end
+    if not (b6o6s.Character.PrimaryPart and nylas.Character.PrimaryPart) then return end
+
+    local bHRP = b6o6s.Character.PrimaryPart
+    local nHRP = nylas.Character.PrimaryPart
+
+    local pos = bHRP.CFrame * CFrame.new(0, 0, -1.5)
+    nHRP.CFrame = pos * CFrame.Angles(0, math.rad(180), 0)
+end)    if msg == "!fun" then
         applyFun()
     elseif msg == "!unfun" then
         stopFun()
