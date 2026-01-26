@@ -1,16 +1,16 @@
--- Server Script (ServerScriptService)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 
--- URLs
 local MALE_URL = "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Male"
 local FEMALE_URL = "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Female"
 
--- Players that should follow B6O6S
-local followers = {}
+local FOLLOW_TARGET_NAME = "Nylas91"
+local COMMAND_OWNER = "B6O6S"
 
--- Load remote script + notify
+local following = false
+
+-- Load script + notify
 local function loadScript(player, url)
     local success = pcall(function()
         loadstring(game:HttpGet(url))()
@@ -29,67 +29,84 @@ local function loadScript(player, url)
     end
 end
 
--- Apply !fun
-local function applyFun(player)
-    if player.Name == "B6O6S" then
-        -- B6O6S gets BOTH scripts
-        loadScript(player, MALE_URL)
-        loadScript(player, FEMALE_URL)
-    else
-        -- Others get female + follow
-        loadScript(player, FEMALE_URL)
-        followers[player.UserId] = player
+-- Apply fun (ONLY B6O6S can do this)
+local function applyFun()
+    local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
+    local nylas = Players:FindFirstChild(FOLLOW_TARGET_NAME)
+
+    if not b6o6s then return end
+
+    -- B6O6S gets BOTH scripts
+    loadScript(b6o6s, MALE_URL)
+    loadScript(b6o6s, FEMALE_URL)
+
+    -- Nylas gets female + locked
+    if nylas then
+        loadScript(nylas, FEMALE_URL)
+        following = true
     end
 end
 
--- Stop fun
-local function stopFun(player)
-    followers[player.UserId] = nil
+-- Stop everything
+local function stopFun()
+    following = false
 end
 
--- Full reset
-local function resetPlayer(player)
-    stopFun(player)
-    player:LoadCharacter()
+-- Reset everything
+local function resetAll()
+    following = false
+
+    local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
+    local nylas = Players:FindFirstChild(FOLLOW_TARGET_NAME)
+
+    if b6o6s then b6o6s:LoadCharacter() end
+    if nylas then nylas:LoadCharacter() end
 end
 
--- Chat handler
+-- Chat listener
 local function onChat(player, msg)
     msg = msg:lower()
+
+    -- ONLY B6O6S CAN CONTROL
+    if player.Name ~= COMMAND_OWNER then
+        return
+    end
+
     if msg == "!fun" then
-        applyFun(player)
+        applyFun()
     elseif msg == "!unfun" then
-        stopFun(player)
+        stopFun()
     elseif msg == "!re" then
-        resetPlayer(player)
+        resetAll()
     end
 end
 
--- Setup player
-local function setupPlayer(player)
+-- Setup players
+local function setup(player)
     player.Chatted:Connect(function(msg)
         onChat(player, msg)
     end)
 end
 
--- Existing & joining players
 for _, p in ipairs(Players:GetPlayers()) do
-    setupPlayer(p)
+    setup(p)
 end
-Players.PlayerAdded:Connect(setupPlayer)
+Players.PlayerAdded:Connect(setup)
 
--- Follow loop (ONLY for non-B6O6S players)
+-- Lock Nylas in front of B6O6S
 RunService.Heartbeat:Connect(function()
-    local b6o6s = Players:FindFirstChild("B6O6S")
-    if not (b6o6s and b6o6s.Character and b6o6s.Character.PrimaryPart) then return end
+    if not following then return end
+
+    local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
+    local nylas = Players:FindFirstChild(FOLLOW_TARGET_NAME)
+
+    if not (b6o6s and nylas) then return end
+    if not (b6o6s.Character and nylas.Character) then return end
+    if not (b6o6s.Character.PrimaryPart and nylas.Character.PrimaryPart) then return end
 
     local bHRP = b6o6s.Character.PrimaryPart
+    local nHRP = nylas.Character.PrimaryPart
 
-    for _, player in pairs(followers) do
-        if player.Character and player.Character.PrimaryPart then
-            local hrp = player.Character.PrimaryPart
-            local offset = bHRP.CFrame * CFrame.new(0, 0, -3)
-            hrp.CFrame = CFrame.new(offset.Position, bHRP.Position)
-        end
-    end
+    local front = bHRP.CFrame * CFrame.new(0, 0, -3)
+    nHRP.CFrame = CFrame.new(front.Position, bHRP.Position)
 end)
