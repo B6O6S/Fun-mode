@@ -1,18 +1,41 @@
+-- SERVICES
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
+local PhysicsService = game:GetService("PhysicsService")
 
+-- SCRIPT URLS
 local MALE_URL = "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Male"
 local FEMALE_URL = "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Female"
 
-local FOLLOW_TARGET_NAME = "Nylas91"
+-- SETTINGS
 local COMMAND_OWNER = "B6O6S"
+local FOLLOW_TARGET_NAME = "Nylas91"
 
+-- STATES
 local following = false
 local pos1Active = false
 local moveTime = 0
 
--- Load script + notify
+--------------------------------------------------
+-- NO PLAYER COLLISION
+--------------------------------------------------
+pcall(function()
+    PhysicsService:CreateCollisionGroup("NoPlayerCollision")
+end)
+PhysicsService:CollisionGroupSetCollidable("NoPlayerCollision", "NoPlayerCollision", false)
+
+local function setNoCollision(character)
+    for _, part in ipairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CollisionGroup = "NoPlayerCollision"
+        end
+    end
+end
+
+--------------------------------------------------
+-- UTIL
+--------------------------------------------------
 local function loadScript(player, url)
     local success = pcall(function()
         loadstring(game:HttpGet(url))()
@@ -23,15 +46,15 @@ local function loadScript(player, url)
             StarterGui:SetCore("SendNotification", {
                 Title = "Fun Mode",
                 Text = "Script loaded successfully!",
-                Duration = 4
+                Duration = 3
             })
         end)
-    else
-        warn("Failed to load script for", player.Name)
     end
 end
 
--- Apply fun
+--------------------------------------------------
+-- COMMAND ACTIONS
+--------------------------------------------------
 local function applyFun()
     local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
     local nylas = Players:FindFirstChild(FOLLOW_TARGET_NAME)
@@ -62,37 +85,47 @@ local function resetAll()
     if nylas then nylas:LoadCharacter() end
 end
 
--- Chat listener
+--------------------------------------------------
+-- CHAT HANDLER (USES ! COMMANDS)
+--------------------------------------------------
 local function onChat(player, msg)
     msg = msg:lower()
-
     if player.Name ~= COMMAND_OWNER then return end
 
-    if msg == "/fun" then
+    if msg == "!fun" then
         applyFun()
-    elseif msg == "/pos1" then
-        pos1Active = true
+    elseif msg == "!pos1" then
         following = true
-    elseif msg == "/unfun" then
+        pos1Active = true
+    elseif msg == "!unfun" then
         stopFun()
-    elseif msg == "/re" then
+    elseif msg == "!re" then
         resetAll()
     end
 end
 
--- Setup players
-local function setup(player)
+--------------------------------------------------
+-- PLAYER SETUP
+--------------------------------------------------
+local function setupPlayer(player)
     player.Chatted:Connect(function(msg)
         onChat(player, msg)
+    end)
+
+    player.CharacterAdded:Connect(function(char)
+        char:WaitForChild("HumanoidRootPart")
+        setNoCollision(char)
     end)
 end
 
 for _, p in ipairs(Players:GetPlayers()) do
-    setup(p)
+    setupPlayer(p)
 end
-Players.PlayerAdded:Connect(setup)
+Players.PlayerAdded:Connect(setupPlayer)
 
--- Follow + back & forth movement
+--------------------------------------------------
+-- FOLLOW + POS1 MOVEMENT
+--------------------------------------------------
 RunService.Heartbeat:Connect(function(dt)
     if not following then return end
 
@@ -108,64 +141,18 @@ RunService.Heartbeat:Connect(function(dt)
     -- base position (1.7 studs in front)
     local baseCF = bHRP.CFrame * CFrame.new(0, 0, -1.7)
 
-    -- back & forth movement when /pos1 is active
+    -- back & forth movement
     local offset = 0
     if pos1Active then
         moveTime += dt
-        offset = math.sin(moveTime * 3) * 0.4 -- movement distance
+        offset = math.sin(moveTime * 3) * 0.4
     end
 
-    local finalPos = baseCF * CFrame.new(0, 0, offset)
+    local finalCF = baseCF * CFrame.new(0, 0, offset)
 
     -- back facing B6O6S
     nHRP.CFrame = CFrame.new(
-        finalPos.Position,
-        finalPos.Position + bHRP.CFrame.LookVector
+        finalCF.Position,
+        finalCF.Position + bHRP.CFrame.LookVector
     )
-end)
-    -- ONLY B6O6S CAN CONTROL
-    if player.Name ~= COMMAND_OWNER then
-        return
-    end
-
-    if msg == "!fun" then
-        applyFun()
-    elseif msg == "!unfun" then
-        stopFun()
-    elseif msg == "!re" then
-        resetAll()
-    end
-end
-
--- Setup players
-local function setup(player)
-    player.Chatted:Connect(function(msg)
-        onChat(player, msg)
-    end)
-end
-
-for _, p in ipairs(Players:GetPlayers()) do
-    setup(p)
-end
-Players.PlayerAdded:Connect(setup)
-
--- Lock Nylas in front of B6O6S with back facing him, 1.7 studs away
-RunService.Heartbeat:Connect(function()
-    if not following then return end
-
-    local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
-    local nylas = Players:FindFirstChild(FOLLOW_TARGET_NAME)
-
-    if not (b6o6s and nylas) then return end
-    if not (b6o6s.Character and nylas.Character) then return end
-    if not (b6o6s.Character.PrimaryPart and nylas.Character.PrimaryPart) then return end
-
-    local bHRP = b6o6s.Character.PrimaryPart
-    local nHRP = nylas.Character.PrimaryPart
-
-    -- Position 1.7 studs in front of B6O6S
-    local front = bHRP.CFrame * CFrame.new(0, 0, -1.7)
-
-    -- Make Nylas face the SAME direction as B6O6S (so her back faces him)
-    nHRP.CFrame = CFrame.new(front.Position, front.Position + bHRP.CFrame.LookVector)
 end)
