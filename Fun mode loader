@@ -1,136 +1,144 @@
--- SERVICES
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 local PhysicsService = game:GetService("PhysicsService")
 
--- SCRIPT URLS
+-- URLs
 local MALE_URL = "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Male"
 local FEMALE_URL = "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Female"
 
--- SETTINGS
+-- Settings
 local COMMAND_OWNER = "B6O6S"
-local FOLLOW_TARGET_NAME = "Nylas91"
+local TARGET_NAME = "Nylas91"
 
--- STATES
+-- States
 local following = false
-local pos1Active = false
+local movementActive = false
 local moveTime = 0
 
 --------------------------------------------------
--- NO PLAYER COLLISION
+-- No collision for all players
 --------------------------------------------------
 pcall(function()
     PhysicsService:CreateCollisionGroup("NoPlayerCollision")
 end)
 PhysicsService:CollisionGroupSetCollidable("NoPlayerCollision", "NoPlayerCollision", false)
 
-local function setNoCollision(character)
-    for _, part in ipairs(character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CollisionGroup = "NoPlayerCollision"
+local function applyNoCollision()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Character then
+            for _, part in ipairs(player.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CollisionGroup = "NoPlayerCollision"
+                end
+            end
         end
     end
 end
 
 --------------------------------------------------
--- UTIL
+-- Load scripts
 --------------------------------------------------
-local function loadScript(player, url)
-    local success = pcall(function()
+local function loadScript(url)
+    pcall(function()
         loadstring(game:HttpGet(url))()
     end)
-
-    if success then
-        pcall(function()
-            StarterGui:SetCore("SendNotification", {
-                Title = "Fun Mode",
-                Text = "Script loaded successfully!",
-                Duration = 3
-            })
-        end)
-    end
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = "Fun Mode",
+            Text = "Script loaded successfully!",
+            Duration = 3
+        })
+    end)
 end
 
 --------------------------------------------------
--- COMMAND ACTIONS
+-- Commands
 --------------------------------------------------
-local function applyFun()
+local function startFun()
     local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
-    local nylas = Players:FindFirstChild(FOLLOW_TARGET_NAME)
+    local nylas = Players:FindFirstChild(TARGET_NAME)
     if not b6o6s then return end
 
-    loadScript(b6o6s, MALE_URL)
-    loadScript(b6o6s, FEMALE_URL)
+    -- Load scripts only
+    loadScript(MALE_URL)
+    loadScript(FEMALE_URL)
 
     if nylas then
-        loadScript(nylas, FEMALE_URL)
-        following = true
+        loadScript(FEMALE_URL)
     end
+
+    -- Make players no-collision
+    applyNoCollision()
+end
+
+local function startPos1()
+    following = true
+    movementActive = true
 end
 
 local function stopFun()
-    following = false
-    pos1Active = false
+    movementActive = false
 end
 
-local function resetAll()
+local function stopAll()
     following = false
-    pos1Active = false
+    movementActive = false
 
     local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
-    local nylas = Players:FindFirstChild(FOLLOW_TARGET_NAME)
+    local nylas = Players:FindFirstChild(TARGET_NAME)
 
+    -- Teleport slightly above void to avoid glitches
+    if b6o6s and b6o6s.Character and b6o6s.Character.PrimaryPart then
+        b6o6s.Character:SetPrimaryPartCFrame(CFrame.new(0, -50, 0))
+    end
+    if nylas and nylas.Character and nylas.Character.PrimaryPart then
+        nylas.Character:SetPrimaryPartCFrame(CFrame.new(0, -50, 0))
+    end
+
+    -- Respawn
     if b6o6s then b6o6s:LoadCharacter() end
     if nylas then nylas:LoadCharacter() end
 end
 
 --------------------------------------------------
--- CHAT HANDLER (USES ! COMMANDS)
+-- Chat listener
 --------------------------------------------------
 local function onChat(player, msg)
     msg = msg:lower()
     if player.Name ~= COMMAND_OWNER then return end
 
     if msg == "!fun" then
-        applyFun()
+        startFun()
     elseif msg == "!pos1" then
-        following = true
-        pos1Active = true
+        startPos1()
     elseif msg == "!unfun" then
         stopFun()
-    elseif msg == "!re" then
-        resetAll()
+    elseif msg == "!stop" then
+        stopAll()
     end
 end
 
---------------------------------------------------
--- PLAYER SETUP
---------------------------------------------------
-local function setupPlayer(player)
+-- Setup players
+local function setup(player)
     player.Chatted:Connect(function(msg)
         onChat(player, msg)
-    end)
-
-    player.CharacterAdded:Connect(function(char)
-        char:WaitForChild("HumanoidRootPart")
-        setNoCollision(char)
     end)
 end
 
 for _, p in ipairs(Players:GetPlayers()) do
-    setupPlayer(p)
+    setup(p)
 end
-Players.PlayerAdded:Connect(setupPlayer)
+Players.PlayerAdded:Connect(setup)
 
 --------------------------------------------------
--- FOLLOW + POS1 MOVEMENT
+-- Follow loop
 --------------------------------------------------
 RunService.Heartbeat:Connect(function(dt)
     if not following then return end
 
     local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
-    local nylas = Players:FindFirstChild(FOLLOW_TARGET_NAME)
+    local nylas = Players:FindFirstChild(TARGET_NAME)
     if not (b6o6s and nylas) then return end
     if not (b6o6s.Character and nylas.Character) then return end
     if not (b6o6s.Character.PrimaryPart and nylas.Character.PrimaryPart) then return end
@@ -138,19 +146,19 @@ RunService.Heartbeat:Connect(function(dt)
     local bHRP = b6o6s.Character.PrimaryPart
     local nHRP = nylas.Character.PrimaryPart
 
-    -- base position (1.7 studs in front)
+    -- base position 1.7 studs in front
     local baseCF = bHRP.CFrame * CFrame.new(0, 0, -1.7)
 
-    -- back & forth movement
+    -- back-and-forth movement only if !pos1 active
     local offset = 0
-    if pos1Active then
+    if movementActive then
         moveTime += dt
         offset = math.sin(moveTime * 3) * 0.4
     end
 
     local finalCF = baseCF * CFrame.new(0, 0, offset)
 
-    -- back facing B6O6S
+    -- Nylas back facing B6O6S
     nHRP.CFrame = CFrame.new(
         finalCF.Position,
         finalCF.Position + bHRP.CFrame.LookVector
