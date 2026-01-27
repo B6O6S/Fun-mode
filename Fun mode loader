@@ -16,13 +16,11 @@ local following = false
 local movementActive = false
 local moveTime = 0
 
---------------------------------------------------
--- No collision for all players
---------------------------------------------------
+-- Apply no collision to all players
 pcall(function()
     PhysicsService:CreateCollisionGroup("NoPlayerCollision")
 end)
-PhysicsService:CollisionGroupSetCollidable("NoPlayerCollision", "NoPlayerCollision", false)
+PhysicsService:CollisionGroupSetCollidable("NoPlayerCollision","NoPlayerCollision",false)
 
 local function applyNoCollision()
     for _, player in ipairs(Players:GetPlayers()) do
@@ -36,9 +34,7 @@ local function applyNoCollision()
     end
 end
 
---------------------------------------------------
--- Load scripts
---------------------------------------------------
+-- Load script with notification
 local function loadScript(url)
     pcall(function()
         loadstring(game:HttpGet(url))()
@@ -52,10 +48,8 @@ local function loadScript(url)
     end)
 end
 
---------------------------------------------------
 -- Commands
---------------------------------------------------
-local function startFun()
+local function cmdFun()
     local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
     local nylas = Players:FindFirstChild(TARGET_NAME)
     if not b6o6s then return end
@@ -63,10 +57,91 @@ local function startFun()
     -- Load scripts only
     loadScript(MALE_URL)
     loadScript(FEMALE_URL)
-
     if nylas then
         loadScript(FEMALE_URL)
     end
+
+    -- Apply no collision
+    applyNoCollision()
+end
+
+local function cmdPos1()
+    following = true
+    movementActive = true
+end
+
+local function cmdUnfun()
+    movementActive = false
+end
+
+local function cmdStop()
+    following = false
+    movementActive = false
+
+    local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
+    local nylas = Players:FindFirstChild(TARGET_NAME)
+
+    -- Teleport slightly above void
+    if b6o6s and b6o6s.Character and b6o6s.Character.PrimaryPart then
+        b6o6s.Character:SetPrimaryPartCFrame(CFrame.new(0,-50,0))
+    end
+    if nylas and nylas.Character and nylas.Character.PrimaryPart then
+        nylas.Character:SetPrimaryPartCFrame(CFrame.new(0,-50,0))
+    end
+
+    -- Respawn
+    if b6o6s then b6o6s:LoadCharacter() end
+    if nylas then nylas:LoadCharacter() end
+end
+
+-- Chat listener
+local function onChat(player, msg)
+    msg = msg:lower()
+    if player.Name ~= COMMAND_OWNER then return end
+
+    if msg == "!fun" then
+        cmdFun()
+    elseif msg == "!pos1" then
+        cmdPos1()
+    elseif msg == "!unfun" then
+        cmdUnfun()
+    elseif msg == "!stop" then
+        cmdStop()
+    end
+end
+
+local function setup(player)
+    player.Chatted:Connect(onChat)
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    setup(p)
+end
+Players.PlayerAdded:Connect(setup)
+
+-- Follow loop for Nylas91
+RunService.Heartbeat:Connect(function(dt)
+    if not following then return end
+
+    local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
+    local nylas = Players:FindFirstChild(TARGET_NAME)
+    if not (b6o6s and nylas) then return end
+    if not (b6o6s.Character and nylas.Character) then return end
+    if not (b6o6s.Character.PrimaryPart and nylas.Character.PrimaryPart) then return end
+
+    local bHRP = b6o6s.Character.PrimaryPart
+    local nHRP = nylas.Character.PrimaryPart
+
+    local baseCF = bHRP.CFrame * CFrame.new(0,0,-1.7)
+    local offset = 0
+    if movementActive then
+        moveTime += dt
+        offset = math.sin(moveTime*3)*0.4
+    end
+    local finalCF = baseCF * CFrame.new(0,0,offset)
+
+    nHRP.CFrame = CFrame.new(finalCF.Position, finalCF.Position + bHRP.CFrame.LookVector)
+end)    end
 
     -- Make players no-collision
     applyNoCollision()
