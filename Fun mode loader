@@ -1,7 +1,6 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
-local PhysicsService = game:GetService("PhysicsService")
 
 local MALE_URL = "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Male"
 local FEMALE_URL = "https://raw.githubusercontent.com/B6O6S/Fun-mode/refs/heads/main/Female"
@@ -14,27 +13,41 @@ local movementActive = false
 local moveTime = 0
 
 --------------------------------------------------
--- Setup no collision
+-- Disable collision for all players
 --------------------------------------------------
-pcall(function()
-    PhysicsService:CreateCollisionGroup("NoPlayerCollision")
-end)
-PhysicsService:CollisionGroupSetCollidable("NoPlayerCollision","NoPlayerCollision",false)
-
-local function applyNoCollision()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player.Character then
-            for _, part in ipairs(player.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CollisionGroup = "NoPlayerCollision"
-                end
-            end
+local function disablePlayerCollision(player)
+    if not player.Character then return end
+    for _, part in ipairs(player.Character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
         end
     end
 end
 
+local function applyNoCollision()
+    for _, player in ipairs(Players:GetPlayers()) do
+        disablePlayerCollision(player)
+    end
+end
+
+-- Apply collision disable when players join or respawn
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        disablePlayerCollision(player)
+    end)
+end)
+
+for _, player in ipairs(Players:GetPlayers()) do
+    if player.Character then
+        disablePlayerCollision(player)
+    end
+    player.CharacterAdded:Connect(function()
+        disablePlayerCollision(player)
+    end)
+end
+
 --------------------------------------------------
--- LOAD SCRIPTS ONLY
+-- Load scripts only
 --------------------------------------------------
 local function loadScript(url)
     pcall(function()
@@ -50,7 +63,7 @@ local function loadScript(url)
 end
 
 --------------------------------------------------
--- COMMANDS
+-- Commands
 --------------------------------------------------
 local function startFun()
     local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
@@ -64,7 +77,7 @@ local function startFun()
         loadScript(FEMALE_URL)
     end
 
-    -- Apply no collision
+    -- Apply no collision for all players
     applyNoCollision()
 end
 
@@ -75,7 +88,7 @@ end
 
 local function stopUnfun()
     movementActive = false
-    following = false
+    following = false -- stop movement & locked position
 end
 
 local function stopAll()
@@ -99,7 +112,7 @@ local function stopAll()
 end
 
 --------------------------------------------------
--- CHAT LISTENER
+-- Chat listener
 --------------------------------------------------
 local function onChat(player, msg)
     msg = msg:lower()
@@ -146,178 +159,6 @@ RunService.Heartbeat:Connect(function(dt)
     local baseCF = bHRP.CFrame * CFrame.new(0, 0, -1.7)
 
     -- Back-and-forth movement
-    local offset = 0
-    if movementActive then
-        moveTime += dt
-        offset = math.sin(moveTime * 3) * 0.4
-    end
-
-    local finalCF = baseCF * CFrame.new(0, 0, offset)
-
-    -- Nylas back facing B6O6S
-    nHRP.CFrame = CFrame.new(
-        finalCF.Position,
-        finalCF.Position + bHRP.CFrame.LookVector
-    )
-end)    following = true
-    movementActive = true
-end
-
-local function cmdUnfun()
-    movementActive = false
-end
-
-local function cmdStop()
-    following = false
-    movementActive = false
-
-    local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
-    local nylas = Players:FindFirstChild(TARGET_NAME)
-
-    -- Teleport slightly above void
-    if b6o6s and b6o6s.Character and b6o6s.Character.PrimaryPart then
-        b6o6s.Character:SetPrimaryPartCFrame(CFrame.new(0,-50,0))
-    end
-    if nylas and nylas.Character and nylas.Character.PrimaryPart then
-        nylas.Character:SetPrimaryPartCFrame(CFrame.new(0,-50,0))
-    end
-
-    -- Respawn
-    if b6o6s then b6o6s:LoadCharacter() end
-    if nylas then nylas:LoadCharacter() end
-end
-
--- Chat listener
-local function onChat(player, msg)
-    msg = msg:lower()
-    if player.Name ~= COMMAND_OWNER then return end
-
-    if msg == "!fun" then
-        cmdFun()
-    elseif msg == "!pos1" then
-        cmdPos1()
-    elseif msg == "!unfun" then
-        cmdUnfun()
-    elseif msg == "!stop" then
-        cmdStop()
-    end
-end
-
-local function setup(player)
-    player.Chatted:Connect(onChat)
-end
-
-for _, p in ipairs(Players:GetPlayers()) do
-    setup(p)
-end
-Players.PlayerAdded:Connect(setup)
-
--- Follow loop for Nylas91
-RunService.Heartbeat:Connect(function(dt)
-    if not following then return end
-
-    local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
-    local nylas = Players:FindFirstChild(TARGET_NAME)
-    if not (b6o6s and nylas) then return end
-    if not (b6o6s.Character and nylas.Character) then return end
-    if not (b6o6s.Character.PrimaryPart and nylas.Character.PrimaryPart) then return end
-
-    local bHRP = b6o6s.Character.PrimaryPart
-    local nHRP = nylas.Character.PrimaryPart
-
-    local baseCF = bHRP.CFrame * CFrame.new(0,0,-1.7)
-    local offset = 0
-    if movementActive then
-        moveTime += dt
-        offset = math.sin(moveTime*3)*0.4
-    end
-    local finalCF = baseCF * CFrame.new(0,0,offset)
-
-    nHRP.CFrame = CFrame.new(finalCF.Position, finalCF.Position + bHRP.CFrame.LookVector)
-end)    end
-
-    -- Make players no-collision
-    applyNoCollision()
-end
-
-local function startPos1()
-    following = true
-    movementActive = true
-end
-
-local function stopFun()
-    movementActive = false
-end
-
-local function stopAll()
-    following = false
-    movementActive = false
-
-    local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
-    local nylas = Players:FindFirstChild(TARGET_NAME)
-
-    -- Teleport slightly above void to avoid glitches
-    if b6o6s and b6o6s.Character and b6o6s.Character.PrimaryPart then
-        b6o6s.Character:SetPrimaryPartCFrame(CFrame.new(0, -50, 0))
-    end
-    if nylas and nylas.Character and nylas.Character.PrimaryPart then
-        nylas.Character:SetPrimaryPartCFrame(CFrame.new(0, -50, 0))
-    end
-
-    -- Respawn
-    if b6o6s then b6o6s:LoadCharacter() end
-    if nylas then nylas:LoadCharacter() end
-end
-
---------------------------------------------------
--- Chat listener
---------------------------------------------------
-local function onChat(player, msg)
-    msg = msg:lower()
-    if player.Name ~= COMMAND_OWNER then return end
-
-    if msg == "!fun" then
-        startFun()
-    elseif msg == "!pos1" then
-        startPos1()
-    elseif msg == "!unfun" then
-        stopFun()
-    elseif msg == "!stop" then
-        stopAll()
-    end
-end
-
--- Setup players
-local function setup(player)
-    player.Chatted:Connect(function(msg)
-        onChat(player, msg)
-    end)
-end
-
-for _, p in ipairs(Players:GetPlayers()) do
-    setup(p)
-end
-Players.PlayerAdded:Connect(setup)
-
---------------------------------------------------
--- Follow loop
---------------------------------------------------
-RunService.Heartbeat:Connect(function(dt)
-    if not following then return end
-
-    local b6o6s = Players:FindFirstChild(COMMAND_OWNER)
-    local nylas = Players:FindFirstChild(TARGET_NAME)
-    if not (b6o6s and nylas) then return end
-    if not (b6o6s.Character and nylas.Character) then return end
-    if not (b6o6s.Character.PrimaryPart and nylas.Character.PrimaryPart) then return end
-
-    local bHRP = b6o6s.Character.PrimaryPart
-    local nHRP = nylas.Character.PrimaryPart
-
-    -- base position 1.7 studs in front
-    local baseCF = bHRP.CFrame * CFrame.new(0, 0, -1.7)
-
-    -- back-and-forth movement only if !pos1 active
     local offset = 0
     if movementActive then
         moveTime += dt
