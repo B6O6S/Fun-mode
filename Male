@@ -1,98 +1,106 @@
+-- =========================
+-- DELTA READY SCRIPT
+-- =========================
+
 -- SERVICES
-local Players = game:GetService("Players")
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local torso = character:WaitForChild("LowerTorso")
+local RunService = game:GetService("RunService")
 
--- TARGET USERNAME
-local targetUsername = "B6O6S"
+-- =========================
+-- ORIGINAL RODS
+-- =========================
 
--- FUNCTION TO APPLY EFFECT
-local function applyRodEffect(character)
-	if not character or not character:FindFirstChild("LowerTorso") then return end
-	local torso = character:WaitForChild("LowerTorso")
+-- ORIGINAL ROD
+local pole = Instance.new("Part")
+pole.Name = "TorsoPole"
+pole.Shape = Enum.PartType.Cylinder
+pole.Size = Vector3.new(0.3, 10, 0.3)
+pole.Material = Enum.Material.SmoothPlastic
+pole.Color = torso.Color
+pole.CanCollide = false
+pole.Anchored = false
+pole.Massless = true
+pole.Parent = character
 
-	-- REMOVE CLOTHES
-	for _, item in ipairs(character:GetChildren()) do
-		if item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") then
-			item:Destroy()
-		end
-	end
+local offset = Vector3.new(0, 0, -0.6)
+local rotation = Vector3.new(90, 0, 90)
 
-	-- REMOVE ONLY BACK ACCESSORIES
-	for _, item in ipairs(character:GetChildren()) do
-		if item:IsA("Accessory") then
-			local handle = item:FindFirstChild("Handle")
-			if handle and handle:FindFirstChild("BodyBackAttachment") then
-				item:Destroy()
-			end
-		end
-	end
+local weld = Instance.new("Weld")
+weld.Part0 = torso
+weld.Part1 = pole
+weld.C0 = CFrame.new(offset) * CFrame.Angles(math.rad(rotation.X), math.rad(rotation.Y), math.rad(rotation.Z))
+weld.Parent = pole
 
-	-- ORIGINAL ROD
-	local pole = Instance.new("Part")
-	pole.Name = "TorsoPole"
-	pole.Shape = Enum.PartType.Cylinder
-	pole.Size = Vector3.new(0.3, 10, 0.3)
-	pole.Material = Enum.Material.SmoothPlastic
-	pole.Color = torso.Color
-	pole.CanCollide = false
-	pole.Anchored = false
-	pole.Massless = true
-	pole.Parent = character
+-- FRONT EXTENSION PART (skin-colored)
+local extension = Instance.new("Part")
+extension.Name = "PoleExtension"
+extension.Shape = Enum.PartType.Cylinder
+extension.Size = Vector3.new(0.3, 8, 0.3)
+extension.Material = Enum.Material.SmoothPlastic
+extension.Color = torso.Color
+extension.CanCollide = false
+extension.Anchored = false
+extension.Massless = true
+extension.Parent = character
 
-	local weld = Instance.new("Weld")
-	weld.Part0 = torso
-	weld.Part1 = pole
-	weld.C0 =
-		CFrame.new(0, 0, -0.6)
-		* CFrame.Angles(math.rad(90), 0, math.rad(90))
-	weld.Parent = pole
+local extWeld = Instance.new("Weld")
+extWeld.Part0 = pole
+extWeld.Part1 = extension
+extWeld.C0 = CFrame.new(-0.3, 0, 0)
+extWeld.C1 = CFrame.new()
+extWeld.Parent = extension
 
-	-- FRONT EXTENSION
-	local extension = Instance.new("Part")
-	extension.Name = "PoleExtension"
-	extension.Shape = Enum.PartType.Cylinder
-	extension.Size = Vector3.new(0.3, 8, 0.3)
-	extension.Material = Enum.Material.SmoothPlastic
-	extension.Color = torso.Color
-	extension.CanCollide = false
-	extension.Anchored = false
-	extension.Massless = true
-	extension.Parent = character
+-- SECOND ROD (salmon pink)
+local secondRod = Instance.new("Part")
+secondRod.Name = "SecondRod"
+secondRod.Shape = Enum.PartType.Cylinder
+secondRod.Size = Vector3.new(0.31, 8, 0.31)
+secondRod.Material = Enum.Material.SmoothPlastic
+secondRod.Color = Color3.fromRGB(250, 128, 114)
+secondRod.CanCollide = false
+secondRod.Anchored = false
+secondRod.Massless = true
+secondRod.Parent = character
 
-	local extWeld = Instance.new("Weld")
-	extWeld.Part0 = pole
-	extWeld.Part1 = extension
-	extWeld.C0 = CFrame.new(-0.3, 0, 0)
-	extWeld.Parent = extension
+local secondWeld = Instance.new("Weld")
+secondWeld.Part0 = pole
+secondWeld.Part1 = secondRod
+secondWeld.C0 = CFrame.new(-0.6, 0, 0)
+secondWeld.C1 = CFrame.new()
+secondWeld.Parent = secondRod
 
-	-- SECOND ROD
-	local secondRod = Instance.new("Part")
-	secondRod.Name = "SecondRod"
-	secondRod.Shape = Enum.PartType.Cylinder
-	secondRod.Size = Vector3.new(0.31, 8, 0.31)
-	secondRod.Material = Enum.Material.SmoothPlastic
-	secondRod.Color = Color3.fromRGB(250, 128, 114)
-	secondRod.CanCollide = false
-	secondRod.Anchored = false
-	secondRod.Massless = true
-	secondRod.Parent = character
+-- =========================
+-- BALLS (NO GUI)
+-- =========================
 
-	local secondWeld = Instance.new("Weld")
-	secondWeld.Part0 = pole
-	secondWeld.Part1 = secondRod
-	secondWeld.C0 = CFrame.new(-0.6, 0, 0)
-	secondWeld.Parent = secondRod
+local ballSize = 0.4
+local ballStickDistance = 0.44
+local ballOffset = Vector3.new(-0.2, -0.2, -0.5)
+
+local function createBall(name)
+	local ball = Instance.new("Part")
+	ball.Name = name
+	ball.Shape = Enum.PartType.Ball
+	ball.Size = Vector3.new(ballSize, ballSize, ballSize)
+	ball.Material = Enum.Material.SmoothPlastic
+	ball.CanCollide = false
+	ball.Anchored = true
+	ball.Massless = true
+	ball.Color = torso.Color
+	ball.Parent = character
+	return ball
 end
 
--- APPLY TO CURRENT PLAYERS
-for _, player in ipairs(Players:GetPlayers()) do
-	if player.Name == targetUsername and player.Character then
-		applyRodEffect(player.Character)
-	end
-end
+local ball1 = createBall("Ball1")
+local ball2 = createBall("Ball2")
 
--- APPLY ON JOIN / RESPAWN
-Players.PlayerAdded:Connect(function(player)
-	if player.Name == targetUsername then
-		player.CharacterAdded:Connect(applyRodEffect)
-	end
+-- FOLLOW PLAYER
+RunService.RenderStepped:Connect(function()
+	ball1.Color = torso.Color
+	ball2.Color = torso.Color
+
+	ball1.CFrame = torso.CFrame * CFrame.new(ballOffset)
+	ball2.CFrame = torso.CFrame * CFrame.new(ballOffset + Vector3.new(ballStickDistance, 0, 0))
 end)
