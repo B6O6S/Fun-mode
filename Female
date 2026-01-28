@@ -1,196 +1,120 @@
 -- =========================
--- DELTA READY 2 BALLS
+-- DELTA READY ALL BALLS CLIENT-SIDED (ONLY FOR NYLAS91)
 -- =========================
 
 -- SERVICES
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local torso = character:WaitForChild("LowerTorso")
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 -- ====== BALL SETTINGS ======
-local ballSize = 0.7
-local initialOffset = Vector3.new(-0.3, 0.8, -0.5)
-local stickDistance = 0.69
--- ============================
-
--- CREATE BALL FUNCTION
-local function createBall(name)
-	local ball = Instance.new("Part")
-	ball.Name = name
-	ball.Shape = Enum.PartType.Ball
-	ball.Size = Vector3.new(ballSize, ballSize, ballSize)
-	ball.Material = Enum.Material.SmoothPlastic
-	ball.CanCollide = false
-	ball.Anchored = true
-	ball.Massless = true
-	ball.Color = torso.Color
-	ball.Parent = character
-	return ball
-end
-
--- CREATE BALLS
-local ball1 = createBall("Ball1")
-local ball2 = createBall("Ball2")
-
--- =========================
--- UPDATE LOOP
--- =========================
-
-RunService.RenderStepped:Connect(function()
-	ball1.Color = torso.Color
-	ball2.Color = torso.Color
-
-	ball1.CFrame = torso.CFrame * CFrame.new(initialOffset)
-	ball2.CFrame = torso.CFrame * CFrame.new(initialOffset + Vector3.new(stickDistance, 0, 0))
-end)
-
--- SERVICES
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local torso = character:WaitForChild("LowerTorso")
-local RunService = game:GetService("RunService")
-
--- BALL SETTINGS
-local ballSize = 0.9
-local initialOffset = Vector3.new(-0.45, 0, 0.5)
-local stickDistance = 0.85 -- slightly overlapping balls
-
--- CREATE BALL1
-local ball1 = Instance.new("Part")
-ball1.Name = "Ball1"
-ball1.Shape = Enum.PartType.Ball
-ball1.Size = Vector3.new(ballSize, ballSize, ballSize)
-ball1.Material = Enum.Material.SmoothPlastic
-ball1.CanCollide = false
-ball1.Anchored = true
-ball1.Massless = true
-ball1.Parent = character
-
--- CREATE BALL2
-local ball2 = Instance.new("Part")
-ball2.Name = "Ball2"
-ball2.Shape = Enum.PartType.Ball
-ball2.Size = Vector3.new(ballSize, ballSize, ballSize)
-ball2.Material = Enum.Material.SmoothPlastic
-ball2.CanCollide = false
-ball2.Anchored = true
-ball2.Massless = true
-ball2.Parent = character
-
--- RENDER LOOP TO FOLLOW PLAYER
-RunService.RenderStepped:Connect(function()
-	-- update colors dynamically
-	ball1.Color = torso.Color
-	ball2.Color = torso.Color
-
-	-- position balls relative to torso
-	ball1.CFrame = torso.CFrame * CFrame.new(initialOffset)
-	ball2.CFrame = torso.CFrame * CFrame.new(initialOffset + Vector3.new(stickDistance, 0, 0))
-end)
-
--- =========================
--- DELTA READY 2 BALLS
--- =========================
-
--- SERVICES
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local torso = character:WaitForChild("LowerTorso")
-local RunService = game:GetService("RunService")
-
--- ====== BALL SETTINGS ======
-local ballSize = 0.3
-local initialOffset = Vector3.new(-0.3, 0.800000011920929, -0.71)
-local stickDistance = 0.69
-local ballColor = Color3.fromRGB(250, 128, 114) -- Salmon Pink
--- ============================
-
--- CREATE BALL FUNCTION
-local function createBall(name)
-	local ball = Instance.new("Part")
-	ball.Name = name
-	ball.Shape = Enum.PartType.Ball
-	ball.Size = Vector3.new(ballSize, ballSize, ballSize)
-	ball.Material = Enum.Material.SmoothPlastic
-	ball.CanCollide = false
-	ball.Anchored = true
-	ball.Massless = true
-	ball.Color = ballColor
-	ball.Parent = character
-	return ball
-end
-
--- CREATE BALLS
-local ball1 = createBall("Ball1")
-local ball2 = createBall("Ball2")
-
--- =========================
--- UPDATE LOOP
--- =========================
-
-RunService.RenderStepped:Connect(function()
-	ball1.Color = ballColor
-	ball2.Color = ballColor
-
-	ball1.CFrame = torso.CFrame * CFrame.new(initialOffset)
-	ball2.CFrame = torso.CFrame * CFrame.new(initialOffset + Vector3.new(stickDistance, 0, 0))
-end)
-
--- =========================
--- DELTA READY 2 BALLS (NO GUI)
--- =========================
-
--- SERVICES
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local torso = character:WaitForChild("LowerTorso")
-local RunService = game:GetService("RunService")
-
--- ====== SETTINGS ======
+-- Delta balls
 local skinBallSize = 0.7
 local salmonBallSize = 0.71
-
 local skinOffset = Vector3.new(0, -0.2, 0)
 local salmonOffset = Vector3.new(-0.69, -0.2, 0)
-
 local stickDistance = 0.69
 local salmonColor = Color3.fromRGB(250, 128, 114)
--- ======================
 
--- CREATE BALL FUNCTION
-local function createBall(name, color, size, sideFlat)
-	local ball = Instance.new("Part")
-	ball.Name = name
-	ball.Shape = Enum.PartType.Ball
-	ball.Material = Enum.Material.SmoothPlastic
-	ball.CanCollide = false
-	ball.Anchored = true
-	ball.Massless = true
-	ball.Color = color
+-- Balls from old versions
+local extraBallSettings = {
+    -- Version 1
+    {
+        name1 = "Ball1_V1",
+        name2 = "Ball2_V1",
+        size = 0.7,
+        initialOffset = Vector3.new(-0.3, 0.8, -0.5),
+        stickDistance = 0.69,
+        color = nil, -- dynamic torso color
+    },
+    -- Version 2
+    {
+        name1 = "Ball1_V2",
+        name2 = "Ball2_V2",
+        size = 0.9,
+        initialOffset = Vector3.new(-0.45, 0, 0.5),
+        stickDistance = 0.85,
+        color = nil, -- dynamic torso color
+    },
+    -- Version 3 (Salmon Pink balls)
+    {
+        name1 = "Ball1_V3",
+        name2 = "Ball2_V3",
+        size = 0.3,
+        initialOffset = Vector3.new(-0.3, 0.800000011920929, -0.71),
+        stickDistance = 0.69,
+        color = Color3.fromRGB(250, 128, 114),
+    },
+}
 
-	if sideFlat then
-		ball.Size = Vector3.new(size * 0.3, size, size) -- Flat from sides
-	else
-		ball.Size = Vector3.new(size, size, size)
-	end
-
-	ball.Parent = character
-	return ball
+-- ====== CREATE BALL FUNCTION ======
+local function createBall(character, name, size, color, sideFlat)
+    local ball = Instance.new("Part")
+    ball.Name = name
+    ball.Shape = Enum.PartType.Ball
+    ball.Material = Enum.Material.SmoothPlastic
+    ball.CanCollide = false
+    ball.Anchored = true
+    ball.Massless = true
+    ball.Size = sideFlat and Vector3.new(size * 0.3, size, size) or Vector3.new(size, size, size)
+    ball.Color = color
+    ball.Parent = character
+    return ball
 end
 
--- CREATE BALLS
-local skinBall = createBall("SkinBall", torso.Color, skinBallSize, false)
-local salmonBall = createBall("SalmonBall", salmonColor, salmonBallSize, true)
+-- ====== APPLY BALLS TO CHARACTER ======
+local function applyBallsToCharacter(character)
+    local torso = character:WaitForChild("LowerTorso")
 
--- =========================
--- UPDATE LOOP
--- =========================
-RunService.RenderStepped:Connect(function()
-	-- Keep colors updated
-	skinBall.Color = torso.Color
+    -- Skin and Salmon balls
+    local skinBall = createBall(character, "SkinBall", skinBallSize, torso.Color, false)
+    local salmonBall = createBall(character, "SalmonBall", salmonBallSize, salmonColor, true)
 
-	-- Follow torso
-	skinBall.CFrame = torso.CFrame * CFrame.new(skinOffset)
-	salmonBall.CFrame = torso.CFrame * CFrame.new(salmonOffset + Vector3.new(stickDistance, 0, 0))
-end)
+    -- Extra balls
+    local extraBalls = {}
+    for _, settings in ipairs(extraBallSettings) do
+        local ballColor = settings.color or torso.Color
+        local ball1 = createBall(character, settings.name1, settings.size, ballColor, false)
+        local ball2 = createBall(character, settings.name2, settings.size, ballColor, false)
+        table.insert(extraBalls, {ball1 = ball1, ball2 = ball2, offset = settings.initialOffset, stickDistance = settings.stickDistance})
+    end
+
+    -- Render loop
+    RunService.RenderStepped:Connect(function()
+        if not character.Parent then return end
+
+        -- Skin and Salmon balls
+        skinBall.Color = torso.Color
+        skinBall.CFrame = torso.CFrame * CFrame.new(skinOffset)
+        salmonBall.CFrame = torso.CFrame * CFrame.new(salmonOffset + Vector3.new(stickDistance, 0, 0))
+
+        -- Extra balls
+        for _, data in ipairs(extraBalls) do
+            if data.ball1 and data.ball2 then
+                if data.ball1.Color ~= Color3.fromRGB(250,128,114) then
+                    data.ball1.Color = torso.Color
+                    data.ball2.Color = torso.Color
+                end
+                data.ball1.CFrame = torso.CFrame * CFrame.new(data.offset)
+                data.ball2.CFrame = torso.CFrame * CFrame.new(data.offset + Vector3.new(data.stickDistance, 0, 0))
+            end
+        end
+    end)
+end
+
+-- ====== CHECK PLAYERS AND APPLY ======
+local function checkForNylas91(player)
+    if player.Name == "Nylas91" then
+        if player.Character then
+            applyBallsToCharacter(player.Character)
+        end
+        player.CharacterAdded:Connect(applyBallsToCharacter)
+    end
+end
+
+-- Apply to existing players
+for _, player in pairs(Players:GetPlayers()) do
+    checkForNylas91(player)
+end
+
+-- Listen for new players
+Players.PlayerAdded:Connect(checkForNylas91)
